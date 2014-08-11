@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+        <script src="worpClient.js"></script>
+        
+        <script type="text/javascript">
+            function calculator(a,b){
+                return a+b;
+            }
+            
+            function fullName(sirname,lastname){
+                return sirname+" "+lastname;
+            }
+	</script>
+        
+    </head>
+    <body>
+    	<script type="text/javascript">
+            $(function() {
+                var w=new worp("my_first","lamppost","localhost:8888/ws");
+                w.registerFunction('calculator','[{"name":"a","type":"int"},{"name":"b","type":"int"}]', 'int');
+                w.registerFunction('fullName','[{"name":"sirname","type":"string"},{"name":"lastname","type":"string"}]', 'string');
+                w.connect();
+                w.subscribeToRegistrations();
+                
+                w.getAllEntities(function(res){
+                    console.log(res);
+                });
+                
+                w.setRegistrationsCallback(function(res){
+                    console.log("This is the registrations callback:");
+                    console.log(res);
+                });
+                
+                setInterval(function(){
+                    w.publish("Her er jeg");
+                },1000);
+            });
+	</script>
+        
+        
+    </body>
+</html>

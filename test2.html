@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+        <script src="worpClient.js"></script>
+        
+        <script type="text/javascript">
+            function calculatorDivision(a,b){
+                return a/b;
+            }
+            
+            function fullAddress(streetname,number){
+                return streetname+" "+number;
+            }
+	</script>
+        
+    </head>
+    <body>
+    	<script type="text/javascript">
+            $(function() {
+                var w=new worp("my_second","lamppost","localhost:8888/ws");
+                w.registerFunction('calculatorDivision','[{"name":"a","type":"int"},{"name":"b","type":"int"}]', 'int');
+                w.registerFunction('fullAddress','[{"name":"streetname","type":"string"},{"name":"number","type":"int"}]', 'string');
+                w.connect();
+                
+                w.getEntity("my_first",function(res){
+                    console.log(res);
+                });
+                
+                w.callMethod("calculator","[3,14]","my_first",function(res){
+                    console.log("The calculation is: "+res);
+                });
+                
+                w.setPublishCallback(function(res){
+                    console.log(res);
+                });
+                
+                w.subscribeTo("my_first");
+            });
+	</script>
+        
+        
+    </body>
+</html>
