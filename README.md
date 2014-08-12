@@ -1,6 +1,4 @@
-arip (Awesome real-time IoT platform)
-
-====
+# arip (Awesome real-time IoT platform)
 
 arip is an object oriented approach towards exploiting Web sockets for the IoT. arip consists of
 remote procedure calls, publish/subscribe and discoverability.
@@ -9,105 +7,77 @@ This means that a client can connect to the arip server, provide a description o
 rpc's does it provide), search for other clients and their descriptions, call rpc's, publish content
 and subscribe to other clients publications.
 
-====
+## Protocol description
 
-# Protocol description
+### General description of terms
 
-## General description of terms
-
-### req_id
-
+#### req_id
 * The "req_id" property is used for keeping track of which callback function to call, when the response comes back to the client that did the initial request. It's all taken care of behind the scene, and the developer should not care about this at all - magic will automatically happen :-)
 
-## Get requests
-
+### Get requests
 * get_all_entities
 * get_all_types
 * get_entity
 * get_entities_by_type
 
-### Communication flow
-
+#### Communication flow
 * client X --> server
   1. {"request":"get_all_entities", "params":[],"req_id":"unique_id"}
   2. {"request":"get_entity", "params":['clientY'],"req_id":"unique_id"}
-  
 * server --> clientX
   1. {"result":"[{'id':'clientY','type':'lamppost'},{'id':'clientZ','type':'hat'}]","req_id":"unique_id"} 
   2. {"result":"{'id':'clientY','type':'lamppost'}","req_id":"unique_id"}
   
-## Publish request
-
+### Publish request
 * publish
 
-### Communication flow
-
+#### Communication flow
 * clientX --> server
   1. {"request": "publish", "content":"some_custom_content"}
-
 * server --> all subscribers
   1. {"request": "publish", "content":"some_custom_content", "sender":"clientX"}
   
-## RPC request
-
+### RPC request
 * call_method
 
-### Communication flow
-
+#### Communication flow
 * clientX --> server
   1. {"request":"call_method", "params":["some_method",[param1, param2]],"req_id":"unique_id", "receiver":"clientY"}
-
 * server --> clientY
   1. {"request":"call_method", "params":["some_method",[param1, param2]],"req_id":"unique_id", "receiver":"clientX"}
-
 * clientY --> server
   1. {"request":"result","content":"some_content","receiver":"clientX","req_id":"unique_id"}
-
 * server --> clientX
   1. {"result":"some_content", "req_id":"unique_id"}
   
-## Subscription and registration requests
-
+### Subscription and registration requests
 * register_methods
 * subscribe_to_registrations
 * unsubscribe_from_registrations
 * subscribe_to
 * unsubscribe_from
 
-### Communication flow
-
+#### Communication flow
 * clientX --> server
   1. {"request":"register_methods", "params":[{"methodName":"stringMethod","parameters":[{"name":"a","type":"int"},{"name":"b","type":"int"}],"returnType":"string"},{"methodName":"intMethod","parameters":[{"name":"a","type":"int"},{"name":"b","type":"int"}],"returnType":"int"}]}
   2. {"request":"subscribe_to","params":["clientY"]}
 
-====
-
-# Simple example
-
+## Simple example
 rpc usage
 pub/sub
 discoverability
 
-====
+## Vote a lamppost
 
-# Vote a lamppost
+### Description and code
 
-## Description and code
-
-====
-
-# Server libraries
-
+## Server libraries
 * Python 
 
-# Client libraries
-
+## Client libraries
 * Javascript
 
-====
-
-# Future work
-
+## Future work
 * Client libraries
   * Arduino
   * Python
@@ -120,9 +90,7 @@ discoverability
   * Implement response to all requests
     * Right now no response is given to the client when it subscribes to an other client (no acknowledgement)
 
-====
-
-# Credits
+## Credits
 
 This platform is greatly inspired by http://wamp.ws/.
 Builds on top of the Python tornado library.
