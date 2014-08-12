@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8" />
         <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
-        <script src="worpClient.js"></script>
+        <script src="aripClient.js"></script>
         
         <script type="text/javascript">
             function calculator(a,b){
@@ -19,7 +19,7 @@
     <body>
     	<script type="text/javascript">
             $(function() {
-                var w=new worp("my_first","lamppost","localhost:8888/ws");
+                var w=new arip("my_first","lamppost","localhost:8888/ws");
                 w.registerFunction('calculator','[{"name":"a","type":"int"},{"name":"b","type":"int"}]', 'int');
                 w.registerFunction('fullName','[{"name":"sirname","type":"string"},{"name":"lastname","type":"string"}]', 'string');
                 w.connect();

@@ -24,7 +24,7 @@
  */
 
 
-function worp(id, type, url){
+function arip(id, type, url){
     var callCounter=0;
     var callbacks=new Array();
     this.id=id;
@@ -95,7 +95,7 @@ function worp(id, type, url){
     
     /****************************/
     /*                          */
-    /*   WORP server methods    */
+    /*   arip server methods    */
     /*                          */
     /****************************/
     
@@ -159,7 +159,7 @@ function worp(id, type, url){
     
     /****************************/
     /*                          */
-    /*    WORP client methods   */
+    /*    arip client methods   */
     /*                          */
     /****************************/
     
