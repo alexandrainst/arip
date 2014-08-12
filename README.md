@@ -23,14 +23,15 @@ and subscribe to other clients publications.
 
 The arip lib uses parts from jquery, so jquery should be implemented (ex.):
 
-<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+`<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>`
 
 Additionally the arip lib has to be implemented (if in same folder as the html file):
 
-<script src="aripClient.js"></script>
+`<script src="aripClient.js"></script>`
 
 Now we can add remote procedure calls (functions that other clients can call remotely):
 
+```
 <script type="text/javascript">
 	function calculator(a,b){
     	return a+b;
@@ -40,53 +41,57 @@ Now we can add remote procedure calls (functions that other clients can call rem
     	return sirname+" "+lastname;
 	}
 </script>
+```
 
 Above is just two regular javascript functions, nothing else.
 
 Now we will have to create and initialise arip:
 
-var w=new arip("my_first","lamppost","localhost:8888/ws");
+`var w=new arip("my_first","lamppost","localhost:8888/ws");`
 
 You will have to provide a unique id, a type, and the connection url. The type can be what ever, it's just used for grouping - maybe I want to search for all lampposts in arip.
 Now you can register RPC's (remote procedure call), let's register the two function above:
 
-w.registerFunction('calculator','[{"name":"a","type":"int"},{"name":"b","type":"int"}]', 'int');
-w.registerFunction('fullName','[{"name":"sirname","type":"string"},{"name":"lastname","type":"string"}]', 'string');
+`w.registerFunction('calculator','[{"name":"a","type":"int"},{"name":"b","type":"int"}]', 'int');`
+`w.registerFunction('fullName','[{"name":"sirname","type":"string"},{"name":"lastname","type":"string"}]', 'string');`
 
 You'll have to give an exact description of the functions. This means that each letter has to be the right case, you have to provide a return type, and all the parameters.
 Parameters are described in json, so each parameter is a dict describing name of the parameter and the type.
 
 If you want to listen for new client connections you'll have to provide a callback function that can catch and process the notification. This is done like this:
 
- w.setRegistrationsCallback(function(res){
-    console.log("This is the registrations callback:");
+```
+w.setRegistrationsCallback(function(res){
+	console.log("This is the registrations callback:");
 	console.log(res);
 });
+```
 
 When all functions and callbacks are registered you can connect to the server you started earlier:
 
-w.connect();
+`w.connect();`
 
 Now you can chose to actually listen for new connections:
 
-w.subscribeToRegistrations();
+`w.subscribeToRegistrations();`
 
 This means that the client will be notified when ever a new client connects to your arip instance.
 
 Let's call some of the other features. we can start out by requesting the server for all registered clients:
 
+```
 w.getAllEntities(function(res){
 	console.log(res);
 });
-
+```
 In most cases you'll have to provide a callback function, since you don't really know when the server responds.
 
 Finally we can now set up the client to publish data to all it's observers:
-
+```
 setInterval(function(){
 	w.publish("Her er jeg");
 },1000);
-
+```
 In the above example, I have chosen to use the build in javascript function setInterval, so that I can publish data every one second (for testing purposes).
 
 ## Protocol description
