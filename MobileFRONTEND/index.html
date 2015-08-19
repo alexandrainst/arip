@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    
+</head>
+<body>
+<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+<script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+<script src="aripClient.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+<script src="panelSlider.js"></script>
+
+<script type="text/javascript">
+    var lampList={};
+    var panelSlide=null;
+    
+    /*{
+        "1":{
+            "id":"1",
+            "type":"Dimmable light",
+            "name":"Lux Lamp",
+            "uniqueid":"00:17:88:01:00:e4:c5:07-0b",
+            "state":{}
+        },
+        "2":{
+            "id":"2",
+            "type":"Dimmable light",
+            "name":"Lux Lamp 1",
+            "uniqueid":"00:17:88:01:00:e4:d0:65-0b",
+            "state":{}
+        }
+    }*/
+    
+    /*{
+            "request":"publish",
+            "content":{
+                "lampStateChanged":{
+                    "id":"1",
+                    "type":"Dimmable light",
+                    "name":"Lux Lamp",
+                    "uniqueid":"00:17:88:01:00:e4:c5:07-0b",
+                    "state":{
+                        "on":false,
+                        "brightness":0,
+                        "reachable":false
+                    }
+                }
+            }
+        }*/
+    
+    $(function() {
+        panelSlide = $("#wrapper").panelSlider({panels:["lamp_list","content_div"]});
+    
+        var w=new arip("","An end user","192.168.1.15:8888/ws");
+        w.connect();
+        
+        w.callMethod("getAllLampposts","[]","LamppostScheduler",function(res){
+            var listOfContent=[];
+            lampList=res;
+            
+            $.each(res,function(key, val){
+                var tempListElem=$("<a/>",{
+                    class: "list-group-item",
+                    id: "list_"+val.id,
+                    text: "Lamp id: "+val.id+" Luminosity: pending"
+                }).click(function(){
+                    specificLampView(val.id);
+                });
+                
+                listOfContent.push(tempListElem);
+                
+            });
+            
+            compileList("lamp_list", listOfContent);
+        });
+        
+        w.setPublishCallback(function(res){
+            if(res.content.hasOwnProperty("lampStateChanged")){
+                var tempval=res.content.lampStateChanged;
+                
+                lampList[tempval.id].state=tempval.state;
+                
+                //TODO: Fix below later
+                $("#list_"+tempval.id).text("Lamp id: "+tempval.id+" Luminosity: "+ (tempval.state.on ? tempval.state.brightness : 0));
+                $("#content_div_header_text").text("Id: "+tempval.id+" Luminosity: "+ (tempval.state.on ? tempval.state.brightness : 0));
+            }
+        });
+        
+        w.subscribeTo("LamppostScheduler");
+    });
+
+    function compileList(parentId, contentList){
+        $("#"+parentId).empty();
+        
+        $.each(contentList,function(i, el){
+            el.appendTo("#"+parentId);
+        });
+    }
+    
+    function specificLampView(lampId){
+        $.each(lampList,function(key, val){
+            if(val.id==lampId){
+                $("#content_div_header_text").text("ID: "+val.id+" Luminosity: "+ (val.state.on ? val.state.brightness : 0));
+                
+                $("#content_div_header_button").text("Back");
+                
+                $("#content_div_header_button").unbind("click").click(function(){
+                    panelSlide.panelSlider("slide","lamp_list",true);
+                });
+                
+                $("#content_div_body").text("Suggest alteration");
+                
+                $("#content_div_properties").text("bla");
+                
+                panelSlide.panelSlider("slide","content_div",false);
+                return false;
+            }
+        });
+    }
+    
+    
+</script>
+
+
+<div id="wrapper" class="clearfix">
+        <div class="list-group" id="lamp_list"></div>
+    
+        <div id="content_div" class="panel panel-default">
+            <div class="panel-heading clearfix" id="content_div_header">
+                <span id="content_div_header_text" class="h4 pull-left"></span>
+                <button id="content_div_header_button" class="btn btn-primary pull-right"></button>
+            </div>
+            
+            <div class="panel-body" id="content_div_body"></div>
+        
+            <div class="list-group" id="content_div_properties"></div>
+        </div>
+</div>
+
+</body>
+</html>

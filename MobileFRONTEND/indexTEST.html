@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    
+</head>
+<body>
+<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+<script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+<script src="aripClient.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+<script src="panelSlider.js"></script>
+
+<script type="text/javascript">
+    var panelSlide=null;
+    
+    $(function() {
+        panelSlide = $("#wrapper").panelSlider({panels:["lamp_list","content_div"]});
+        
+        
+        var listOfContent=[];
+            
+        var tempListElem=$("<a/>",{
+            class: "list-group-item",
+            id: "list_1",
+            text: "Lamp id: 1 Luminosity: pending"
+        }).click(function(){
+            specificLampView(1);
+        });
+        
+        var tempListElem2=$("<a/>",{
+            class: "list-group-item",
+            id: "list_2",
+            text: "Lamp id: 2 Luminosity: pending"
+        }).click(function(){
+            specificLampView(2);
+        });
+        
+        listOfContent.push(tempListElem);
+        listOfContent.push(tempListElem2);
+            
+        compileList("lamp_list", listOfContent);
+        
+        $("#content_div_header_button").click(function(){
+            panelSlide.panelSlider("slide","lamp_list",true);
+        });
+    
+    });
+
+    function compileList(parentId, contentList){
+        $("#"+parentId).empty();
+        
+        $.each(contentList,function(i, el){
+            el.appendTo("#"+parentId);
+        });
+    }
+    
+    function specificLampView(lampId){
+        $("#content_div_header_text").text("ID: "+lampId+" Luminosity: 0");
+        $("#content_div_header_button").text("Back");
+        $("#content_div_body").text("Suggest alteration");
+        $("#content_div_properties").text("bla");
+        
+        panelSlide.panelSlider("slide","content_div",false);
+    }
+    
+    
+</script>
+
+
+<div id="wrapper" class="clearfix">
+        <div class="list-group" id="lamp_list"></div>
+    
+        <div id="content_div" class="panel panel-default">
+            <div class="panel-heading clearfix" id="content_div_header">
+                <span id="content_div_header_text" class="h4 pull-left"></span>
+                <button id="content_div_header_button" class="btn btn-primary pull-right"></button>
+            </div>
+            
+            <div class="panel-body" id="content_div_body"></div>
+        
+            <div class="list-group" id="content_div_properties"></div>
+        </div>
+</div>
+
+</body>
+</html>
