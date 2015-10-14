@@ -78,7 +78,8 @@ function Arip(id, type, url){
                     else
                         res='Error occurred. The client could not parse the request as a function';
                     
-                    sendToServer('{"request":"result", "content":'+JSON.stringify(res)+', "req_id":"'+obj.req_id+'", "receiver":"'+obj.receiver+'"}');    
+                    if(res!=undefined)
+                        sendToServer('{"request":"result", "content":'+JSON.stringify(res)+', "req_id":"'+obj.req_id+'", "receiver":"'+obj.receiver+'"}');    
                 }
             }
             else if(obj.hasOwnProperty('register')){

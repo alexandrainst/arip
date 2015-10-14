@@ -3,141 +3,422 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="css/themes/voteALamppost.min.css" />
+    <link rel="stylesheet" type="text/css" href="css/themes/jquery.mobile.icons.min.css" />
+    
+    <link rel="stylesheet" type="text/css" href="css/jquery.mobile-1.4.5.min.css" />
+    <link rel="stylesheet" type="text/css" href="css/jqm-datebox.min.css">
+    <link rel="stylesheet" type="text/css" href="css/custom.css" />
+    
+    <script src="js/jquery-1.11.1.min.js"></script>
+    <script src="js/jquery.mobile-1.4.5.min.js"></script>
+    <script src="js/jquery_color.js"></script>
+    
+    <!-- Date box -->
+    <script type="text/javascript" src="js/jqm-datebox.core.min.js"></script>
+    <script type="text/javascript" src="js/jqm-datebox.mode.calbox.min.js"></script>
+    <script type="text/javascript" src="js/jqm-datebox.mode.flipbox.min.js"></script>
+    <script type="text/javascript" src="js/jquery.mobile.datebox.i18n.en_US.utf8.js"></script>
+    
+    <script src="aripClient.js"></script>
     
 </head>
 <body>
-<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
-<script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
-<script src="aripClient.js"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-<script src="panelSlider.js"></script>
 
 <script type="text/javascript">
+    
     var lampList={};
-    var panelSlide=null;
+    var activeLamp=null;
+    var activeSuggestion=null;
+    var w=null;
     
-    /*{
-        "1":{
-            "id":"1",
-            "type":"Dimmable light",
-            "name":"Lux Lamp",
-            "uniqueid":"00:17:88:01:00:e4:c5:07-0b",
-            "state":{}
-        },
-        "2":{
-            "id":"2",
-            "type":"Dimmable light",
-            "name":"Lux Lamp 1",
-            "uniqueid":"00:17:88:01:00:e4:d0:65-0b",
-            "state":{}
-        }
-    }*/
-    
-    /*{
-            "request":"publish",
-            "content":{
-                "lampStateChanged":{
-                    "id":"1",
-                    "type":"Dimmable light",
-                    "name":"Lux Lamp",
-                    "uniqueid":"00:17:88:01:00:e4:c5:07-0b",
-                    "state":{
-                        "on":false,
-                        "brightness":0,
-                        "reachable":false
-                    }
-                }
-            }
-        }*/
-    
-    $(function() {
-        panelSlide = $("#wrapper").panelSlider({panels:["lamp_list","content_div"]});
-    
-        var w=new arip("","An end user","192.168.1.15:8888/ws");
+    $(function() {   
+        
+        activeLamp=null;
+        activeSuggestion=null;
+        
+        /*****************************/
+        /*                           */
+        /*        Arip stuff         */
+        /*                           */
+        /*****************************/
+        
+     
+        w=new arip("","An end user","192.168.1.15:8888/ws");
         w.connect();
         
         w.callMethod("getAllLampposts","[]","LamppostScheduler",function(res){
-            var listOfContent=[];
             lampList=res;
-            
+            updateLampList();
+        });
+        
+        w.callMethod("getAllActiveSuggestions","[]","LamppostScheduler",function(res){
             $.each(res,function(key, val){
-                var tempListElem=$("<a/>",{
-                    class: "list-group-item",
-                    id: "list_"+val.id,
-                    text: "Lamp id: "+val.id+" Luminosity: pending"
-                }).click(function(){
-                    specificLampView(val.id);
-                });
-                
-                listOfContent.push(tempListElem);
-                
+                if(!lampList[val.lampId].hasOwnProperty("suggestions"))
+                    lampList[val.lampId].suggestions=[];
+                lampList[val.lampId].suggestions.push(val);
             });
-            
-            compileList("lamp_list", listOfContent);
         });
         
         w.setPublishCallback(function(res){
-            if(res.content.hasOwnProperty("lampStateChanged")){
-                var tempval=res.content.lampStateChanged;
+            //var res=JSON.parse(result);
+            if(res.content.hasOwnProperty("created")){
+                res.content.created=JSON.parse(res.content.created);
                 
+                if(!lampList[res.content.created.lampId].hasOwnProperty("suggestions"))
+                    lampList[res.content.created.lampId].suggestions=[];
+                lampList[res.content.created.lampId].suggestions.push(res.content.created);
+                
+                //Update suggestions list if specific lamp is current lamp
+                if(res.content.created.lampId==activeLamp)
+                    updateSpecificLampSuggestions(activeLamp);
+            
+            }else if(res.content.hasOwnProperty("deleted")){
+                res.content.deleted=JSON.parse(res.content.deleted);
+                
+                var deleteIndex=-1;
+                $.each(lampList[res.content.deleted.lampId].suggestions, function(key, val){
+                    if(val.suggestionId==res.content.deleted.suggestionId){
+                        deleteIndex=val.suggestionId;
+                        return false;
+                    }
+                });
+                lampList[res.content.deleted.lampId].suggestions.splice(deleteIndex,1);
+                
+                //Update suggestions list if current lamp
+                if(res.content.deleted.lampId==activeLamp)
+                    updateSpecificLampSuggestions(activeLamp);
+            
+            }else if(res.content.hasOwnProperty("lampStateChanged")){
+                var tempval=res.content.lampStateChanged;
                 lampList[tempval.id].state=tempval.state;
                 
-                //TODO: Fix below later
-                $("#list_"+tempval.id).text("Lamp id: "+tempval.id+" Luminosity: "+ (tempval.state.on ? tempval.state.brightness : 0));
-                $("#content_div_header_text").text("Id: "+tempval.id+" Luminosity: "+ (tempval.state.on ? tempval.state.brightness : 0));
+                //Update specific lamp header if current lamp
+                if(tempval.id==activeLamp){
+                  updateSpecificLampHeader(tempval.id, tempval.state.brightness);
+                  //updateSpecificLampSlider(tempval.state.brightness);
+                }
+                
+                //Update lamp list
+                updateLampList();
+                
+            
+            }else if(res.content.hasOwnProperty("voting")){
+                res.content.voting=JSON.parse(res.content.voting);
+            
+                $.each(lampList[res.content.voting.lampId].suggestions, function(key, val){
+                    if(val.suggestionId==res.content.voting.suggestionId){
+                        lampList[res.content.voting.lampId].suggestions[key]=res.content.voting;
+                        return false;
+                    }
+                });
+                
+                //Update suggestions list if specific lamp is current lamp
+                if(res.content.voting.lampId==activeLamp)
+                    updateSpecificLampSuggestions(activeLamp);
+                
+            
+            }else if(res.content.hasOwnProperty("newLamp")){
+                res.content.newLamp=JSON.parse(res.content.newLamp);
+            
+                lampList[res.content.newLamp.id].push(res.content.newLamp);
+                
+                //Update lamps view
+                updateLampList();
+                
+            
+            }else if(res.content.hasOwnProperty("votingExecuted")){
+                res.content.votingExecuted=JSON.parse(res.content.votingExecuted);
+            
+                var deleteIndex=-1;
+                $.each(lampList[res.content.votingExecuted.lampId].suggestions, function(key, val){
+                    if(val.suggestionId==res.content.votingExecuted.suggestionId){
+                        deleteIndex=val.suggestionId;
+                        return false;
+                    }
+                });
+                lampList[res.content.votingExecuted.lampId].suggestions.splice(deleteIndex,1);
+                
+                //Update suggestions list if specific lamp is current lamp
+                if(res.content.votingExecuted.lampId==activeLamp)
+                    updateSpecificLampSuggestions(activeLamp);
+            
+            }else if(res.content.hasOwnProperty("votingCanceled")){
+                res.content.votingCanceled=JSON.parse(res.content.votingCanceled);
+            
+                var deleteIndex=-1;
+                $.each(lampList[res.content.votingCanceled.lampId].suggestions, function(key, val){
+                    if(val.suggestionId==res.content.votingCanceled.suggestionId){
+                        deleteIndex=val.suggestionId;
+                        return false;
+                    }
+                });
+                lampList[res.content.votingCanceled.lampId].suggestions.splice(deleteIndex,1);
+                
+                //Update suggestions list if specific lamp is current lamp
+                if(res.content.votingCanceled.lampId==activeLamp)
+                    updateSpecificLampSuggestions(activeLamp);
             }
         });
         
         w.subscribeTo("LamppostScheduler");
-    });
-
-    function compileList(parentId, contentList){
-        $("#"+parentId).empty();
         
-        $.each(contentList,function(i, el){
-            el.appendTo("#"+parentId);
+        /*****************************/
+        /*                           */
+        /*        UI elements        */
+        /*                           */
+        /*****************************/
+        
+        //Date widget
+        $('#datebox').datebox({
+            mode: "calbox",
+            afterToday: true,
+            useInline:false,
+            useFocus:true,
+            useButton:false
         });
-    }
-    
-    function specificLampView(lampId){
-        $.each(lampList,function(key, val){
-            if(val.id==lampId){
-                $("#content_div_header_text").text("ID: "+val.id+" Luminosity: "+ (val.state.on ? val.state.brightness : 0));
+        
+        //Time widget
+        $('#timebox').datebox({
+            mode: "timeflipbox",
+            useInline:false,
+            useFocus:true,
+            useButton:false
+        });
+        
+        //Create new suggestion and send to server
+        $("#createSuggestion").click(function(){
+            var sliderVal=$("#slider_form a").attr("aria-valuenow");
+            var theDate=new Date($('#datebox').datebox('getTheDate'));
+            var theTime=new Date($('#timebox').datebox('getTheDate'));
+            
+            var theDateNow=new Date();
+            theDateNow.setHours(0,0,0,0);
+            var theTimeNow=new Date();
+            theTimeNow.setYear(theTime.getFullYear());
+            theTimeNow.setDate(theTime.getDate());
+            theTimeNow.setMonth(theTime.getMonth());
+            
+            var validator=true;
+            
+            console.log("theDate: "+theTime);
+            console.log("DateTime: "+theTimeNow);
+            
+            if($('#datebox').val()=="" || theDate < theDateNow){
+                errorColor("datebox");
+                validator=false;
+            }
                 
-                $("#content_div_header_button").text("Back");
-                
-                $("#content_div_header_button").unbind("click").click(function(){
-                    panelSlide.panelSlider("slide","lamp_list",true);
-                });
-                
-                $("#content_div_body").text("Suggest alteration");
-                
-                $("#content_div_properties").text("bla");
-                
-                panelSlide.panelSlider("slide","content_div",false);
-                return false;
+            if($('#timebox').val()=="" || theTime.getTime() < theTimeNow.getTime()+60000){
+                errorColor("timebox");
+                validator=false;
+            }
+            
+            if(validator){
+                theDateNow.setFullYear(theDate.getFullYear(), theDate.getMonth(), theDate.getDate());
+                theDateNow.setMinutes(theTime.getMinutes());
+                theDateNow.setHours(theTime.getHours());
+                theDateNow.setSeconds(0);
+            
+                w.callMethod("createSuggestion",JSON.stringify([activeLamp,theDateNow.toString(),mapNumber(Number(sliderVal), 0, 100, 0, 254)]),"LamppostScheduler",function(res){});
             }
         });
+        
+        
+        //Vote suggestion up
+        $("#btn_vote_up").click(function(){
+            if(activeSuggestion!=null)
+                w.callMethod("voteOnSuggestion",JSON.stringify([activeSuggestion,1]),"LamppostScheduler",function(res){});
+            
+            activeSuggestion=null;
+        });
+        
+        //Vote suggestion down
+        $("#btn_vote_down").click(function(){
+            if(activeSuggestion!=null)
+                w.callMethod("voteOnSuggestion",JSON.stringify([activeSuggestion,0]),"LamppostScheduler",function(res){});
+            
+            activeSuggestion=null;
+        });
+        
+        //Turn on lamppost for x minutes
+        $("#xMinOfLight").click(function(){
+            w.callMethod("giveMeXMinutesOfLight",JSON.stringify([activeLamp,2]),"LamppostScheduler",function(res){});
+        });
+        
+        
+        
+        /*****************************/
+        /*                           */
+        /*        Page event         */
+        /*                           */
+        /*****************************/
+        
+        $("#specificLamp").on("pagebeforeshow", function( event, ui ) {
+            specificLampView(activeLamp);
+        });
+    });
+    
+    //Fill and updates list of lamps
+    function updateLampList(){
+        $("#lamp_list").empty();
+            
+        $.each(lampList,function(key, val){
+            var tempListElem=$("<a/>",{
+                id: "lamplist_"+val.id,
+                href: "#specificLamp",
+                "data-transition":"slide",
+                text: "Lamp "+val.id+($.isEmptyObject(val.state) ? ' pending' : (val.state.on && val.state.brightness>0 ? ' has luminosity of '+mapNumber(val.state.brightness, 0, 254, 0, 100)+'%' : ' is off'))
+            }).click(function(){
+                activeLamp=val.id;
+            });
+            
+            var li=$("<li/>");
+            li.append(tempListElem);
+            $("#lamp_list").append(li);
+        });
+        
+        $('#lamp_list').listview('refresh');
     }
     
+    //Fill entire specific lamp view with data
+    function specificLampView(lampId){
+        //var luminosity=lampList[lampId].state.on && lampList[lampId].state.brightness>0 ? mapNumber(lampList[lampId].state.brightness, 0, 254, 0, 100) : 0;
+        var luminosity=lampList[lampId].state.on ? lampList[lampId].state.brightness : 0;
+        
+        updateSpecificLampHeader(lampId, luminosity);
+        updateSpecificLampSuggestions(lampId);
+        updateSpecificLampSlider(luminosity);
+    }
+    
+    //Update function: Fill and update specific lamp view header
+    function updateSpecificLampHeader(lampId, luminosity){
+        luminosity=mapNumber(luminosity, 0, 254, 0, 100);
+        $("#specificLamp_heading").text("Lamp "+lampId+(luminosity>0 ? ", luminosity: "+ luminosity+"%" : " is off"));
+    }
+    
+    //Update function: Updates slider of specific lamp
+    function updateSpecificLampSlider(luminosity){
+        luminosity=mapNumber(luminosity, 0, 254, 0, 100);
+        $("#lumSlider").val(luminosity).slider("refresh");
+    }
+    
+    //Update function:  Fill and update specific lamp view suggestion list
+    function updateSpecificLampSuggestions(lampId){
+        $("#lamp_view_suggestions").empty();
+        
+        if(lampList[lampId].hasOwnProperty("suggestions") && lampList[lampId].suggestions.length>0){
+            $("#lamp_view_suggestions").append("<li data-role='list-divider'>Active suggestions</li>");
+            
+            $.each(lampList[lampId].suggestions, function(key,val){
+                var tempLi=$("<li />");
+                
+                var date=new Date(val.date);
+                var visualDate=date.getDate()+" / "+(date.getMonth()+1)+" - "+date.getFullYear()+" "+date.getHours()+":"+date.getMinutes();
+                
+                var tempA=$("<a />",{
+                    href:"#voting",
+                    "data-transition":"slide",
+                    text:visualDate+(val.dimmLevel>0 ? ", luminosity "+mapNumber(val.dimmLevel, 0, 254, 0, 100)+"%" : ", off")
+                }).click(function(){
+                    activeSuggestion=val.suggestionId;
+                });
+                
+                if(val.votesUp>=val.votesDown)
+                    tempA.addClass("ui-btn ui-btn-d");
+                else
+                    tempA.addClass("ui-btn ui-btn-c");
+                
+                tempLi.append(tempA);
+                $("#lamp_view_suggestions").append(tempLi);
+            });
+        }else{
+            $("#lamp_view_suggestions").append("<li data-role='list-divider'>No active suggestions</li>");
+        }
+        
+        $('#lamp_view_suggestions').listview('refresh');
+    }
+    
+    /*****************************/
+    /*                           */
+    /*     Helper functions      */
+    /*                           */
+    /*****************************/
+    
+    //Map between number ranges
+    function mapNumber (value, in_min, in_max, out_min, out_max) {
+        return Math.round((value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min);
+    }
+    
+    function errorColor(elementId){
+        $("#"+elementId).css({
+            backgroundColor:"#ed1c24"
+        });
+        
+        $("#"+elementId).animate({
+            backgroundColor:"transparent"
+        },2000);
+    }
     
 </script>
 
 
-<div id="wrapper" class="clearfix">
-        <div class="list-group" id="lamp_list"></div>
-    
-        <div id="content_div" class="panel panel-default">
-            <div class="panel-heading clearfix" id="content_div_header">
-                <span id="content_div_header_text" class="h4 pull-left"></span>
-                <button id="content_div_header_button" class="btn btn-primary pull-right"></button>
-            </div>
-            
-            <div class="panel-body" id="content_div_body"></div>
+<!-- All lamps -->
+<div data-role="page" id="lamps">
+    <div data-role="header" class="ui-bar ui-bar-a ui-grid-solo">
+		    <h1>Available lampposts</h1>
+	</div>
+
+	<div role="main" class="ui-content">
+	    <ul data-role="listview" id="lamp_list"></ul>
+	</div>
+</div>
+
+<!-- Specific lamp view -->
+<div data-role="page" id="specificLamp">
+	<div data-role="header">
+		<h1 id="specificLamp_heading"></h1>
+		<a href="#lamps" data-transition="slide" data-rel="back" class="ui-btn ui-corner-all ui-btn-inline ui-btn-right">Back</a>
+	</div>
+
+    <div data-role="content">
+        <a class="ui-btn ui-corner-all ui-btn-active" id="xMinOfLight">2 minutes of light</a> 
+          
+        <ul id="lamp_view_lamps" data-role="listview" data-inset="true" data-dividertheme="b"> 
+            <li data-role="list-divider" id="lamp_view_lamps_make_suggestion">Make suggestion</li>
+            <li>
+                <span>Date: </span>
+	            <div><input id="datebox" type="text" readonly="readonly" /></div>
+                
+                <span>Time: </span>
+	            <div><input id="timebox" type="text" readonly="readonly" /></div>
+
+                <form class="full-width-slider" id="slider_form">
+	                <label for="lumSlider">Luminosity: </label>
+	                <input type="range" name="lumSlider" id="lumSlider" min="0" max="100" value="50">
+	            </form>
+	            
+	            <button class="ui-btn ui-corner-all ui-btn-active" id="createSuggestion">Create suggestion</button>
+            </li> 
+        </ul>    
         
-            <div class="list-group" id="content_div_properties"></div>
-        </div>
+        <!-- Active suggestions for specific lamp -->
+        <ul id="lamp_view_suggestions" data-role="listview" data-inset="true" data-dividertheme="b"> </ul>       
+    </div>   
+</div>
+
+
+<!-- Voting page -->
+<div data-role="page" id="voting">
+    <div data-role="header">
+		<h1>Vote on suggestion</h1>
+		<a href="#specificLamp" data-transition="slide" data-rel="back" class="ui-btn ui-corner-all ui-btn-inline ui-btn-right">Back</a>
+	</div>
+
+	<div role="main" class="ui-content">
+	    <a class="ui-btn ui-corner-all ui-btn-d" href="#specificLamp" data-transition="slide" data-rel="back" id="btn_vote_up">Vote up</a>
+	    <a class="ui-btn ui-corner-all ui-btn-c" href="#specificLamp" data-transition="slide" data-rel="back" id="btn_vote_down">Vote down</a>
+	</div>
 </div>
 
 </body>

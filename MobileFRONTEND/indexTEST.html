@@ -3,51 +3,116 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="css/themes/voteALamppost.min.css" />
+    <link rel="stylesheet" type="text/css" href="css/themes/jquery.mobile.icons.min.css" />
     
+    <link rel="stylesheet" href="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css" />
+    <!-- link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css" -->
+    <link rel="stylesheet" type="text/css" href="http://cdn.jtsage.com/datebox/latest/jqm-datebox.min.css">
+    <link rel="stylesheet" type="text/css" href="css/custom.css" />
+
 </head>
 <body>
-<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
-<script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
-<script src="aripClient.js"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-<script src="panelSlider.js"></script>
+    <script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+    <!-- script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script -->
+    <script src="http://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+    
+    <!-- Date box -->
+    <script type="text/javascript" src="http://cdn.jtsage.com/datebox/latest/jqm-datebox.core.min.js"></script>
+    <script type="text/javascript" src="http://dev.jtsage.com/cdn/datebox/latest/jqm-datebox.mode.calbox.min.js"></script>
+    <script type="text/javascript" src="http://dev.jtsage.com/cdn/datebox/latest/jqm-datebox.mode.flipbox.min.js"></script>
+    <script type="text/javascript" src="http://cdn.jtsage.com/datebox/i18n/jquery.mobile.datebox.i18n.en_US.utf8.js"></script>
 
 <script type="text/javascript">
-    var panelSlide=null;
+        /*{
+        "1":{
+            "id":"1",
+            "type":"Dimmable light",
+            "name":"Lux Lamp",
+            "uniqueid":"00:17:88:01:00:e4:c5:07-0b",
+            "state":{}
+        },
+        "2":{
+            "id":"2",
+            "type":"Dimmable light",
+            "name":"Lux Lamp 1",
+            "uniqueid":"00:17:88:01:00:e4:d0:65-0b",
+            "state":{}
+        }
+    }*/
     
+    /*{
+            "request":"publish",
+            "content":{
+                "lampStateChanged":{
+                    "id":"1",
+                    "type":"Dimmable light",
+                    "name":"Lux Lamp",
+                    "uniqueid":"00:17:88:01:00:e4:c5:07-0b",
+                    "state":{
+                        "on":false,
+                        "brightness":0,
+                        "reachable":false
+                    }
+                }
+            }
+        }*/
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    //Setting up date and time boxes
     $(function() {
-        panelSlide = $("#wrapper").panelSlider({panels:["lamp_list","content_div"]});
-        
-        
-        var listOfContent=[];
-            
-        var tempListElem=$("<a/>",{
-            class: "list-group-item",
-            id: "list_1",
-            text: "Lamp id: 1 Luminosity: pending"
-        }).click(function(){
-            specificLampView(1);
+        $('#datebox').datebox({
+            mode: "calbox",
+            afterToday: true,
+            useInline:false,
+            useFocus:true,
+            useButton:false
         });
         
-        var tempListElem2=$("<a/>",{
-            class: "list-group-item",
-            id: "list_2",
-            text: "Lamp id: 2 Luminosity: pending"
-        }).click(function(){
-            specificLampView(2);
+        
+        $('#timebox').datebox({
+            mode: "timeflipbox",
+            useInline:false,
+            useFocus:true,
+            useButton:false
         });
         
-        listOfContent.push(tempListElem);
-        listOfContent.push(tempListElem2);
-            
-        compileList("lamp_list", listOfContent);
+        $("#specificLamp").on("pagebeforeshow", function( event, ui ) {
+            $("#lumSlider").val(10).slider("refresh");
+        });
         
-        $("#content_div_header_button").click(function(){
-            panelSlide.panelSlider("slide","lamp_list",true);
+        
+        $("#createSuggestion").click(function(){
+            var sliderVal=$("#slider_form a").attr("aria-valuenow");
+            var theDate=new Date($('#datebox').datebox('getTheDate'));
+            var theTime=new Date($('#timebox').datebox('getTheDate'));
+            
+            var dateTime=new Date();
+            dateTime.setFullYear(theDate.getFullYear(), theDate.getMonth(), theDate.getDate());
+            dateTime.setMinutes(theTime.getMinutes());
+            dateTime.setHours(theTime.getHours());
+            dateTime.setSeconds(0);
+            
+            console.log("Slide: "+sliderVal+", Date: "+dateTime);
+            
         });
     
     });
+    
+    //Setting up events
+    
+    
+    
 
     function compileList(parentId, contentList){
         $("#"+parentId).empty();
@@ -70,19 +135,75 @@
 </script>
 
 
-<div id="wrapper" class="clearfix">
-        <div class="list-group" id="lamp_list"></div>
-    
-        <div id="content_div" class="panel panel-default">
-            <div class="panel-heading clearfix" id="content_div_header">
-                <span id="content_div_header_text" class="h4 pull-left"></span>
-                <button id="content_div_header_button" class="btn btn-primary pull-right"></button>
-            </div>
-            
-            <div class="panel-body" id="content_div_body"></div>
+<!-- All lamps -->
+<div data-role="page" id="lamps">
+    <div data-role="header" class="ui-bar ui-bar-a ui-grid-solo">
+		    <h1>Available lampposts</h1>
+	</div>
+
+	<div role="main" class="ui-content">
+	    <ul data-role="listview" id="lamp_list">
+	        <li><a href="#specificLamp" data-transition="slide" class="ui-btn ui-btn-d">Lamp id: 1 Luminosity: pending</a></li>
+	        <li><a href="#specificLamp" data-transition="slide">Lamp id: 2 Luminosity: pending</a></li>
+	    </ul>
+	</div>
+</div>
+
+
+<!-- Specific lamp view -->
+<div data-role="page" id="specificLamp">
+	<div data-role="header">
+		<h1>Lamp 1, luminosity 123</h1>
+		<a href="#lamps" data-transition="slide" data-rel="back" class="ui-btn ui-corner-all ui-btn-inline ui-btn-right">Back</a>
+	</div>
+
+    <div data-role="content">      
+        <ul data-role="listview" data-inset="true" data-dividertheme="b"> 
+            <li data-role="list-divider">Make suggestion</li>
+            <li>
+                <span>Date: </span>
+	            <div><input id="datebox" type="text" readonly="readonly" /></div>
+                
+                <span>Time: </span>
+	            <div><input id="timebox" type="text" readonly="readonly" /></div>
+
+                <form class="full-width-slider" id="slider_form">
+	                <label for="lumSlider">Luminosity: </label>
+	                <input type="range" name="lumSlider" id="lumSlider" min="0" max="100" value="50">
+	            </form>
+	            
+	            <button class="ui-btn ui-corner-all ui-btn-active" id="createSuggestion">Make suggestion</button>
+            </li> 
+        </ul>    
         
-            <div class="list-group" id="content_div_properties"></div>
-        </div>
+        
+        <ul data-role="listview" data-inset="true" data-dividertheme="b"> 
+            <li data-role="list-divider">Active suggestions</li> 
+            <li>
+                <a href="#voting" data-transition="slide" >23/8 2015 15:33 Luminosity 25%</a>
+            </li> 
+            <li>
+                <a href="#voting" data-transition="slide" >23/8 2015 15:33 Luminosity 100%</a>
+            </li> 
+            <li>
+                <a href="#voting" data-transition="slide" >23/8 2015 15:33 Luminosity off</a>
+            </li> 
+        </ul>       
+    </div>   
+</div>
+
+
+<!-- Voting page -->
+<div data-role="page" id="voting">
+    <div data-role="header">
+		<h1>Vote on suggestion</h1>
+		<a href="#specificLamp" data-transition="slide" data-rel="back" class="ui-btn ui-corner-all ui-btn-inline ui-btn-right">Back</a>
+	</div>
+
+	<div role="main" class="ui-content">
+	    <button class="ui-btn ui-corner-all ui-btn-d" id="btn_vote_up">Vote up</button>
+	    <button class="ui-btn ui-corner-all ui-btn-c" id="btn_vote_down">Vote down</button>
+	</div>
 </div>
 
 </body>
