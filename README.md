@@ -11,6 +11,7 @@ and subscribe to other clients publications.
 
 1. In a terminal start genericplatform.py. On mac that is done by doing this (has only been tested with Python 2.7.5):
   * python genericplatform.py
+  * If the terminal complains about Tornado, then you need to install that as a module first: pip install tornado
 2. Now the server is started and running in the terminal on localhost port 8888
 3. put aripclient.js, test1.html and test2.html in the same folder in your webserver
 4. Open test1.html in one browser session (ex. in incognito or use two different browsers)
